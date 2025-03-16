@@ -1,0 +1,99 @@
+#include <stdio.h>
+#include <stdbool.h>
+
+
+#define MAX_DEP 3
+
+struct Date {
+	char[2] month;
+	char[2] day;
+	char[4] year;
+};
+
+struct Address {
+	char[35] street_address;
+	char[35] city;
+	char[2] state; //state abbreviation, i.e. "NJ"
+	char[5] zip_code;
+}
+
+struct TaxPayer {
+	char[35] name;
+	struct Date dob;
+	int w2_wages;
+	int rental_income;
+	int se_income; //Sch C, Sch E pg2
+	bool eic_qualify;
+};
+
+struct Dependent {
+	char name[35];
+	struct Date dob;
+	bool ctc_qualify;
+	bool odc_qualify;
+	bool eic_qualify;
+};
+
+struct f1040 {
+	struct TaxPayer primary_taxpayer;
+	struct TaxPayer spouse;
+	struct Address address;
+	struct Dependent dependents[MAX_DEP];
+	int w2_wages;
+	int sch1_additional_income;
+	int total_income;
+	int sch1_adjusments_to_income;
+	int agi;
+	int std_deduction;
+	int itemized_deduction;
+	int qbi_deduction;
+	int taxable_income;
+	int tax;
+	int sch2_add_taxes_precredits;
+	int ctc_credit;
+	int odc_credit;
+	int sch3_additional_credits;
+	int sch2_other_taxes;
+	int total_taxes;
+	int w2_payments;
+	int f1099_payments;
+	int estimated_payments;
+	int eic_credit;
+	int actc_credit;
+	int aotc_credit;
+	int total_payments;
+};
+
+struct Schedule1 {
+	int business_income; //negative if loss
+	int rental_income;
+	int unemployment_comp;
+	//a catch-all member until other tax types are implemented
+	int other_additional_income; 
+
+	int se_tax_deduction;
+	//a catch-all member until other deduction types are implemented
+	int other_deductions;
+};
+
+//Set int values to zero for easier summation later.
+void initialize_tax_return(f1040 *tax_return, int year);
+
+//adds a taxpayer as primary to an empty retrun, a spouse to a tax return
+//that already has a primary_taxpayer, and an error to a tax return that
+//already has two taxpayers. Initialize TaxPayer members with null.
+void add_taxpayer(f1040 *tax_return, TaxPayer taxpayer);
+
+//adds a dependent to the tax return up to the MAX_DEP
+void add_dependent(f1040 *tax_return, Dependent dependent);
+
+void set_std_deduction(f1040 *tax_return, int status);
+
+//sums income from Schedule 1 and adds to f1040 struct.
+void sum_income(f1040 *tax_return, Schedule1 schedule);
+
+
+int main()
+{
+	printf("compiled!");
+}
