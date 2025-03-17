@@ -1,0 +1,13 @@
+On code layout and flow:
+An effort is made to maintain the structure of the actual tax forms used by the
+IRS, as well as have the logic of the code follow their worksheets and general
+flow of the forms. Why change something the government has worked on for
+decades?
+
+
+On variable names:
+Variable names are maintained line agnostic. Line numbers tend to change from
+year to year, so variable names use the tax form field name. These are often
+bolded on the form. In the cases where a field name is not available, an
+attempt will be made at a descriptive name. Tax year specific info might be
+found in the comments, preppended by something like "2024TY" w/o the quotes.
