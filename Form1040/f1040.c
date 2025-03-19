@@ -4,6 +4,9 @@
 
 
 #define MAX_DEP 3
+#define STD_DED_SINGLE 14600
+#define STD_DED_MFJ 29200
+#define STD_DED_HOH 21900
 
 struct Date {
 	char month[2];
@@ -46,8 +49,8 @@ void initialize_dependent(struct Dependent *dep);
 struct f1040 {
 	int tax_year;
 	struct Date filing_date;
-	struct TaxPayer *primary_taxpayer;
-	struct TaxPayer *spouse;
+	//struct TaxPayer *primary_taxpayer;
+	//struct TaxPayer *spouse;
 	int status;
 	struct Address *address;
 	struct Dependent *dependents[MAX_DEP];
@@ -88,6 +91,8 @@ struct Schedule1 {
 
 void initialize_schedule1(struct Schedule1 *schedule);
 
+void calculate_additional_income(struct Schedule1 *schedule);
+
 struct Schedule2 {
 	int excess_ptc;
 	int se_tax;
@@ -107,7 +112,7 @@ void initialize_tax_return(struct f1040 *tax_return, int year);
 //adds a taxpayer as primary to an empty retrun, a spouse to a tax return
 //that already has a primary_taxpayer, and an error to a tax return that
 //already has two taxpayers. Initialize TaxPayer members with null.
-void add_taxpayer(struct f1040 *tax_return, struct TaxPayer taxpayer);
+//void add_taxpayer(struct f1040 *tax_return, struct TaxPayer taxpayer);
 
 //adds a dependent to the tax return up to the MAX_DEP
 void add_dependent(struct f1040 *tax_return, struct Dependent dependent);
@@ -120,7 +125,10 @@ void add_address(struct f1040 *tax_return, struct Address address);
 3 = MFS
 4 = HoH
 /*******/
-void set_status(struct f1040 *tax_return, int status);
+//void set_status(struct f1040 *tax_return, int status);
+
+//commits taxpayer's income and details to the tax return.
+void commit_taxpayer(struct f1040 *tax_return, struct Schedule1 *schedule, struct TaxPayer taxpayer);
 
 //sums income from Schedule 1 and adds to f1040 struct.
 void calculate_total_income(struct f1040 *tax_return, struct Schedule1 schedule);
@@ -166,9 +174,7 @@ void calculate_final_result(struct f1040 *tax_return);
 void initialize_tax_return(struct f1040 *tax_return, int tax_year)
 {
 	tax_return->tax_year = tax_year;
-	tax_return->primary_taxpayer = NULL;
 	tax_return->address = NULL;
-	tax_return->spouse = NULL;
 	tax_return->status = 0;
 	for (int i = 0; i < MAX_DEP; i++)
 	{
@@ -232,12 +238,19 @@ void initialize_schedule1(struct Schedule1 *schedule)
 	printf("Schedule 1 initialized.\n");
 }
 
+void calculate_additional_income(struct Schedule1 *schedule)
+{
+	schedule->additional_income += schedule->rental_income;
+	schedule->additional_income += schedule->business_income;
+}
+
 void add_wage_income(struct TaxPayer *taxpayer, int wages)
 {
 	taxpayer->w2_wages += wages;
 	printf("Wages of %d added.\n", taxpayer->w2_wages);
 }
 
+/*
 void add_taxpayer(struct f1040 *tax_return, struct TaxPayer taxpayer)
 {
 	if (tax_return->primary_taxpayer == NULL)
@@ -254,7 +267,9 @@ void add_taxpayer(struct f1040 *tax_return, struct TaxPayer taxpayer)
 	printf("Already 2 taxpayers on the return.\n");
 	return;
 }
+*/
 
+/* // For now, just let the programmer write to tax_return.status freely.
 void set_status(struct f1040 *tax_return, int status)
 {
 	if (status == 1 | status == 4)
@@ -272,6 +287,7 @@ void set_status(struct f1040 *tax_return, int status)
 	printf("Status set successfuly.\n");
 	return;
 }
+*/
 
 struct Address create_address(char street[35], char city[35], char state[2], char zip[5])
 {
@@ -296,6 +312,28 @@ void add_address(struct f1040 *tax_return, struct Address address)
 	return;
 }
 
+void set_std_deduction(struct f1040 *tax_return)
+{
+	if (tax_return->status == 1 | tax_return->status == 3)
+	{
+		tax_return->std_deduction = STD_DED_SINGLE;
+		printf("Setting standard deduction: %d\n", tax_return->std_deduction);
+		return;
+	}
+	else if (tax_return->status == 2)
+	{
+		tax_return->std_deduction = STD_DED_MFJ;
+		printf("Setting standard deduction: %d\n", tax_return->std_deduction);
+		return;
+	}
+	else if (tax_return->status == 4)
+	{
+		tax_return->std_deduction = STD_DED_HOH;
+		printf("Setting standard deduction: %d\n", tax_return->std_deduction);
+		return;
+	}
+}
+
 void add_dependent(struct f1040 *tax_return, struct Dependent dependent)
 {
 	for (int i = 0; i < MAX_DEP; i++)
@@ -311,31 +349,54 @@ void add_dependent(struct f1040 *tax_return, struct Dependent dependent)
 	return;
 }
 
+void commit_taxpayer(struct f1040 *tax_return, struct Schedule1 *schedule, struct TaxPayer taxpayer)
+{
+	tax_return->w2_wages += taxpayer.w2_wages;
+	schedule->rental_income += taxpayer.rental_income;
+	schedule->business_income += taxpayer.se_income;
+	printf("Taxpayer income commited to f1040 and Schedule 1.\n");
+}
+
 void calculate_total_income(struct f1040 *tax_return, struct Schedule1 schedule)
 {
-	tax_return->w2_wages += tax_return->primary_taxpayer->w2_wages;
-	if (tax_return->status == 2)
-	{
-		tax_return->w2_wages += tax_return->spouse->w2_wages;
-	}
 	tax_return->total_income += tax_return->w2_wages;
-	tax_return->total_income += schedule.adjustments_to_income;
+	tax_return->total_income += schedule.additional_income;
 	printf("Total income calculated: %d.\n", tax_return->total_income);
+}
+
+void calculate_agi(struct f1040 *tax_return, struct Schedule1 schedule)
+{
+	tax_return->agi = tax_return->total_income - schedule.adjustments_to_income;
+	printf("AGI calculated: %d\n", tax_return->agi);
+}
+
+void calculate_taxable_income(struct f1040 *tax_return)
+{
+	tax_return->taxable_income += tax_return->agi;
+	tax_return->taxable_income -= tax_return->std_deduction;
+	tax_return->taxable_income -= tax_return->qbi_deduction;
+	printf("Taxable income calculated: %d\n", tax_return->taxable_income);
+}
+
+void calculate_tax(struct f1040 *tax_return)
+{
+	int running_total = 0;
 }
 
 int main()
 {
 	struct f1040 tax_return;
 	initialize_tax_return(&tax_return, 2024);
+
 	
 	struct Schedule1 sch1;
 	initialize_schedule1(&sch1);
 
 	struct TaxPayer primary;
 	initialize_taxpayer(&primary);
-	add_taxpayer(&tax_return, primary);
+	//add_taxpayer(&tax_return, primary);
 
-	set_status(&tax_return, 1);
+	tax_return.status = 1;
 
 	struct Dependent dependent;
 	initialize_dependent(&dependent);
@@ -344,8 +405,14 @@ int main()
 	add_address(&tax_return, address);
 
 	add_wage_income(&primary, 40000);
-
+	calculate_additional_income(&sch1);
+	commit_taxpayer(&tax_return, &sch1, primary);
 	calculate_total_income(&tax_return, sch1);
+	calculate_agi(&tax_return, sch1);
+	
+	set_std_deduction(&tax_return);
+
+	calculate_taxable_income(&tax_return);
 
 	printf("compiled!\n");
 }
