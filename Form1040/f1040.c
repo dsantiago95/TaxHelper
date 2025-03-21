@@ -2,6 +2,11 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define BRACKETS_TABLE "tables/brackets.txt"
+#define EITC_TABLE "tables/eitc_table.txt"
+
+#define CTC_AMOUNT 2000
+#define ODC_AMOUNT 500
 
 #define MAX_DEP 3
 #define STD_DED_SINGLE 14600
@@ -22,6 +27,13 @@ struct Address {
 };
 
 struct Address create_address(char street[35], char city[35], char state[2], char zip[5]);
+
+struct Brackets {
+	float tax_rate[7];
+	int income_limit[7];
+} brackets;
+
+void read_brackets();
 
 struct TaxPayer {
 	char name[35];
@@ -149,6 +161,8 @@ void calculate_additional_precredit_tax(struct f1040 *tax_return, struct Schedul
 //Form 8812
 void calculate_ctc(struct f1040 *tax_return);
 
+void calculate_odc(struct f1040 *tax_return);
+
 void calculate_other_credits(struct f1040 *tax_return, struct Schedule3 schedule);
 
 void calculate_other_taxes(struct f1040 *tax_return, struct Schedule2 schedule);
@@ -157,6 +171,10 @@ void calculate_total_taxes(struct f1040 *tax_return);
 
 //W-2 and 1099 withholdings, estimated payments
 void calculate_payments(struct f1040 *tax_return);
+
+int find_eitc_comumn(struct f1040 *tax_return);
+
+void get_eic(struct f1040 *tax_return);
 
 void calculate_eic(struct f1040 *tax_return);
 
@@ -204,6 +222,18 @@ void initialize_tax_return(struct f1040 *tax_return, int tax_year)
 	tax_return->aotc_credit = 0;
 
 	printf("Tax Return initialized successfuly.\n");
+}
+
+void read_brackets()
+{
+	FILE *f = fopen(BRACKETS_TABLE, "r");
+
+	if (f == NULL) { return; }
+
+	for (int i = 0; i < 7; i++) {
+		fscanf(f, "%f,%d", &brackets.tax_rate[i], &brackets.income_limit[i]);
+	}
+	fclose(f);
 }
 
 void initialize_dependent(struct Dependent *dep)
@@ -292,11 +322,11 @@ void set_status(struct f1040 *tax_return, int status)
 struct Address create_address(char street[35], char city[35], char state[2], char zip[5])
 {
 	struct Address return_add;
-	strcpy(return_add.street_address, street);
-	strcpy(return_add.city, city);
-	strcpy(return_add.state, state);
-	strcpy(return_add.zip_code, zip);
-	printf("New address created.\n");
+	strncpy(return_add.street_address, street, 35);
+	strncpy(return_add.city, city, 35);
+	strncpy(return_add.state, state, 2);
+	strncpy(return_add.zip_code, zip, 5);
+	printf("Address created.\n");
 	return return_add;
 }
 
@@ -380,7 +410,96 @@ void calculate_taxable_income(struct f1040 *tax_return)
 
 void calculate_tax(struct f1040 *tax_return)
 {
-	int running_total = 0;
+	int taxes = 0;
+	int running_income = tax_return->taxable_income;
+
+	if (running_income >= brackets.income_limit[0])
+	{
+		int income_diff = running_income - brackets.income_limit[0];
+		taxes += (income_diff * brackets.tax_rate[0]);
+		running_income -= income_diff;
+	}
+	if (running_income >= brackets.income_limit[1])
+	{
+		int income_diff = running_income - brackets.income_limit[1];
+		taxes += (income_diff * brackets.tax_rate[1]);
+		running_income -= income_diff;
+	}
+	if (running_income >= brackets.income_limit[2])
+	{
+		int income_diff = running_income - brackets.income_limit[2];
+		taxes += (income_diff * brackets.tax_rate[2]);
+		running_income -= income_diff;
+	}
+	if (running_income >= brackets.income_limit[3])
+	{
+		int income_diff = running_income - brackets.income_limit[3];
+		taxes += (income_diff * brackets.tax_rate[3]);
+		running_income -= income_diff;
+	}
+	if (running_income >= brackets.income_limit[4])
+	{
+		int income_diff = running_income - brackets.income_limit[4];
+		taxes += (income_diff * brackets.tax_rate[4]);
+		running_income -= income_diff;
+	}
+	if (running_income >= brackets.income_limit[5])
+	{
+		int income_diff = running_income - brackets.income_limit[5];
+		taxes += (income_diff * brackets.tax_rate[5]);
+		running_income -= income_diff;
+	}
+	if (running_income >= brackets.income_limit[6])
+	{
+		int income_diff = running_income - brackets.income_limit[6];
+		taxes += (income_diff * brackets.tax_rate[6]);
+		running_income -= income_diff;
+	}
+	if (running_income < 0)
+	{
+		printf("Error, running_income below 0.\n");
+	}
+
+	tax_return->tax = taxes;
+	printf("Taxes calculated: %d\n", tax_return->tax);
+}
+
+void calculate_ctc(struct f1040 *tax_return)
+{
+	int num_ctc = 0;
+	for (int i = 0; i < MAX_DEP; i++)
+	{
+		if (tax_return->dependents[i]->ctc_qualify)
+		{
+			num_ctc++;
+		}
+	}	
+	printf("Calculating CTC amount: %d\n", num_ctc * CTC_AMOUNT);
+	tax_return->ctc_credit =  num_ctc * CTC_AMOUNT;
+}
+
+void calculate_odc(struct f1040 *tax_return)
+{
+	int num_odc = 0;
+	for (int i = 0; i < MAX_DEP; i++)
+	{
+		if (tax_return->dependents[i]->odc_qualify)
+		{
+			num_odc++;
+		}
+	}	
+	printf("Calculating ODC amount: %d\n", num_odc * ODC_AMOUNT);
+	tax_return->odc_credit = num_odc * ODC_AMOUNT;
+}
+
+void get_eic(struct f1040 *tax_return)
+{
+
+}
+
+void calculate_eic(struct f1040 *tax_return)
+{
+
 }
 
 int main()
@@ -388,6 +507,7 @@ int main()
 	struct f1040 tax_return;
 	initialize_tax_return(&tax_return, 2024);
 
+	read_brackets();
 	
 	struct Schedule1 sch1;
 	initialize_schedule1(&sch1);
@@ -413,6 +533,10 @@ int main()
 	set_std_deduction(&tax_return);
 
 	calculate_taxable_income(&tax_return);
+
+	calculate_tax(&tax_return);
+
+	calculate_ctc(&tax_return);
 
 	printf("compiled!\n");
 }
