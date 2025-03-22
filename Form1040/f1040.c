@@ -497,9 +497,66 @@ void calculate_odc(struct f1040 *tax_return)
 	tax_return->odc_credit = num_odc * ODC_AMOUNT;
 }
 
+int find_eitc_column(const struct f1040 *tax_return) {
+	int col = 3;
+	if (tax_return->status == 2)
+	{
+		col += 4; //offset to get to MFJ section of table
+	}	
+	for (int  i = 0; i < MAX_DEP; i++)
+	{
+		if (tax_return->dependents[i]->eic_qualify)
+		{
+			col++;
+		}
+	}
+
+	return col;
+}	
+
 void get_eic(struct f1040 *tax_return)
 {
+	int eic_return = 0;
+	
+	FILE *f = fopen(EITC_TABLE, "r");
 
+	printf("Opened file.\n");
+
+	int col1, col2, col3, col4, col5, col6, col7, col8, col9, col10;
+	int eitc_row[10];
+
+	if (f == NULL) { return; }
+
+	char buf[256];
+	while (fgets(buf, sizeof(buf), f))
+	{
+		sscanf(
+			buf,
+			"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+			&col1, &col2, &col3, &col4, &col5, 
+			&col6, &col7, &col8, &col9, &col10
+		);
+
+		if (tax_return->total_income >= col1 & tax_return->total_income < col2)
+		{
+			printf("Found row.\n");
+			eitc_row[0] = col1;
+			eitc_row[1] = col2;
+			eitc_row[2] = col3;
+			eitc_row[3] = col4;
+			eitc_row[4] = col5;
+			eitc_row[5] = col6;
+			eitc_row[6] = col7;
+			eitc_row[7] = col8;
+			eitc_row[8] = col9;
+			eitc_row[9] = col10;
+			tax_return->eic_credit = eitc_row[find_eitc_column(&tax_return) - 1];
+			printf("EIC calculated: %d\n", tax_return->eic_credit);
+		}	
+	}
+
+	fclose(f);
+	printf("get_eic: reached end of function\n");
 }
 
 void calculate_eic(struct f1040 *tax_return)
@@ -545,6 +602,8 @@ int main()
 	calculate_tax(&tax_return);
 
 	calculate_ctc(&tax_return);
+
+	get_eic(&tax_return);
 
 	printf("compiled!\n");
 }
