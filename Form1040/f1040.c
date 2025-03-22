@@ -49,6 +49,7 @@ void initialize_taxpayer(struct TaxPayer *taxpayer);
 void add_wage_income(struct TaxPayer *taxpayer, int wages);
 
 struct Dependent {
+	bool is_initialized;
 	char name[35];
 	struct Date dob;
 	bool ctc_qualify;
@@ -127,7 +128,7 @@ void initialize_tax_return(struct f1040 *tax_return, int year);
 //void add_taxpayer(struct f1040 *tax_return, struct TaxPayer taxpayer);
 
 //adds a dependent to the tax return up to the MAX_DEP
-void add_dependent(struct f1040 *tax_return, struct Dependent dependent);
+void add_dependent(struct f1040 *tax_return, struct Dependent *dependent);
 
 void add_address(struct f1040 *tax_return, struct Address address);
 
@@ -241,6 +242,7 @@ void initialize_dependent(struct Dependent *dep)
 	dep->ctc_qualify = false;
 	dep->odc_qualify = false;
 	dep->eic_qualify = false;
+	dep->is_initialized = false;
 
 	printf("Dependent initialized successfuly.\n");
 }
@@ -364,13 +366,13 @@ void set_std_deduction(struct f1040 *tax_return)
 	}
 }
 
-void add_dependent(struct f1040 *tax_return, struct Dependent dependent)
+void add_dependent(struct f1040 *tax_return, struct Dependent *dependent)
 {
 	for (int i = 0; i < MAX_DEP; i++)
 	{
-		if (tax_return->dependents[i] != NULL)
+		if (tax_return->dependents[i] == NULL)
 		{
-			tax_return->dependents[i] = &dependent;
+			tax_return->dependents[i] = dependent;
 			printf("New dependent added.\n");
 			return;
 		}
@@ -469,9 +471,12 @@ void calculate_ctc(struct f1040 *tax_return)
 	int num_ctc = 0;
 	for (int i = 0; i < MAX_DEP; i++)
 	{
-		if (tax_return->dependents[i]->ctc_qualify)
+		if (tax_return->dependents[i] != NULL)
 		{
-			num_ctc++;
+			if (tax_return->dependents[i]->ctc_qualify)
+			{
+				num_ctc++;
+			}
 		}
 	}	
 	printf("Calculating CTC amount: %d\n", num_ctc * CTC_AMOUNT);
@@ -520,6 +525,9 @@ int main()
 
 	struct Dependent dependent;
 	initialize_dependent(&dependent);
+	dependent.ctc_qualify = true;
+	dependent.eic_qualify = true;
+	add_dependent(&tax_return, &dependent);
 
 	struct Address address = create_address("831 Elizabeth Ave", "Elizabeth", "NJ", "07201");
 	add_address(&tax_return, address);
