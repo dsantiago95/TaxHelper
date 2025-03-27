@@ -2,7 +2,15 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define BRACKETS_TABLE "tables/brackets.txt"
+#include "Date.h"
+#include "TaxPayer.h"
+#include "Address.h"
+#include "Brackets.h"
+#include "Dependent.h"
+#include "Schedule1.h"
+#include "Schedule2.h"
+#include "Schedule3.h"
+
 #define EITC_TABLE "tables/eitc_table.txt"
 
 #define CTC_AMOUNT 2000
@@ -13,51 +21,8 @@
 #define STD_DED_MFJ 29200
 #define STD_DED_HOH 21900
 
-struct Date {
-	char month[2];
-	char day[2];
-	char year[4];
-};
 
-struct Address {
-	char street_address[35];
-	char city[35];
-	char state[2]; //state abbreviation, i.e. "NJ"
-	char zip_code[5];
-};
-
-struct Address create_address(char street[35], char city[35], char state[2], char zip[5]);
-
-struct Brackets {
-	float tax_rate[7];
-	int income_limit[7];
-} brackets;
-
-void read_brackets();
-
-struct TaxPayer {
-	char name[35];
-	struct Date dob;
-	int w2_wages;
-	int rental_income;
-	int se_income; //Sch C, Sch E pg2
-	bool eic_qualify;
-};
-
-void initialize_taxpayer(struct TaxPayer *taxpayer);
-
-void add_wage_income(struct TaxPayer *taxpayer, int wages);
-
-struct Dependent {
-	bool is_initialized;
-	char name[35];
-	struct Date dob;
-	bool ctc_qualify;
-	bool odc_qualify;
-	bool eic_qualify;
-};
-
-void initialize_dependent(struct Dependent *dep);
+struct Brackets brackets;
 
 struct f1040 {
 	int tax_year;
@@ -92,32 +57,8 @@ struct f1040 {
 	int total_payments;
 };
 
-struct Schedule1 {
-	int business_income; //negative if loss
-	int rental_income;
-	int unemployment_comp;
-	int additional_income;  // 2024TY: line 10
 
-	int se_tax_deduction;
-	int adjustments_to_income; // 2024TY: line 26
-};
 
-void initialize_schedule1(struct Schedule1 *schedule);
-
-void calculate_additional_income(struct Schedule1 *schedule);
-
-struct Schedule2 {
-	int excess_ptc;
-	int se_tax;
-	//a catch-all memeber until other taxes are implemented
-	int other_taxes;
-};
-
-//bare minimum implentation of Sch3, will need to be expanded
-struct Schedule3 {
-	int nonrefundable_credits;
-	int refundable_credits;
-};
 
 //Set int values to zero for easier summation later.
 void initialize_tax_return(struct f1040 *tax_return, int year);
@@ -175,8 +116,6 @@ void calculate_payments(struct f1040 *tax_return);
 
 int find_eitc_comumn(struct f1040 *tax_return);
 
-void get_eic(struct f1040 *tax_return);
-
 void calculate_eic(struct f1040 *tax_return);
 
 void calculate_actc(struct f1040 *tax_return);
@@ -225,62 +164,12 @@ void initialize_tax_return(struct f1040 *tax_return, int tax_year)
 	printf("Tax Return initialized successfuly.\n");
 }
 
-void read_brackets()
-{
-	FILE *f = fopen(BRACKETS_TABLE, "r");
 
-	if (f == NULL) { return; }
 
-	for (int i = 0; i < 7; i++) {
-		fscanf(f, "%f,%d", &brackets.tax_rate[i], &brackets.income_limit[i]);
-	}
-	fclose(f);
-}
 
-void initialize_dependent(struct Dependent *dep)
-{
-	dep->ctc_qualify = false;
-	dep->odc_qualify = false;
-	dep->eic_qualify = false;
-	dep->is_initialized = false;
 
-	printf("Dependent initialized successfuly.\n");
-}
 
-void initialize_taxpayer(struct TaxPayer *taxpayer)
-{
-	taxpayer->w2_wages = 0;
-	taxpayer->rental_income = 0;
-	taxpayer->se_income = 0; //Sch C, Sch E pg2
-	taxpayer->eic_qualify = false;
 
-	printf("Taxpayer initialized successfuly.\n");
-}
-
-void initialize_schedule1(struct Schedule1 *schedule)
-{
-
-	schedule->business_income = 0; //negative if loss
-	schedule->rental_income = 0;
-	schedule->unemployment_comp = 0;
-	schedule->additional_income = 0;  // 2024TY: line 10
-
-	schedule->se_tax_deduction = 0;
-	schedule->adjustments_to_income = 0; // 2024TY: line 26
-	printf("Schedule 1 initialized.\n");
-}
-
-void calculate_additional_income(struct Schedule1 *schedule)
-{
-	schedule->additional_income += schedule->rental_income;
-	schedule->additional_income += schedule->business_income;
-}
-
-void add_wage_income(struct TaxPayer *taxpayer, int wages)
-{
-	taxpayer->w2_wages += wages;
-	printf("Wages of %d added.\n", taxpayer->w2_wages);
-}
 
 /*
 void add_taxpayer(struct f1040 *tax_return, struct TaxPayer taxpayer)
@@ -321,16 +210,6 @@ void set_status(struct f1040 *tax_return, int status)
 }
 */
 
-struct Address create_address(char street[35], char city[35], char state[2], char zip[5])
-{
-	struct Address return_add;
-	strncpy(return_add.street_address, street, 35);
-	strncpy(return_add.city, city, 35);
-	strncpy(return_add.state, state, 2);
-	strncpy(return_add.zip_code, zip, 5);
-	printf("Address created.\n");
-	return return_add;
-}
 
 void add_address(struct f1040 *tax_return, struct Address address)
 {
@@ -468,6 +347,17 @@ void calculate_tax(struct f1040 *tax_return)
 
 void calculate_ctc(struct f1040 *tax_return)
 {
+	if (tax_return->status == 2 && tax_return->total_income >= 400000)
+	{
+		printf("Does not qualify for CTC.\n");
+		return;
+	}
+	else if (tax_return->total_income >= 200000)
+	{
+		printf("Does not qualify for CTC.\n");
+		return;
+	}
+
 	int num_ctc = 0;
 	for (int i = 0; i < MAX_DEP; i++)
 	{
@@ -505,22 +395,24 @@ int find_eitc_column(const struct f1040 *tax_return) {
 	}	
 	for (int  i = 0; i < MAX_DEP; i++)
 	{
-		if (tax_return->dependents[i]->eic_qualify)
+		if (tax_return->dependents[i] != NULL)
 		{
-			col++;
+			if (tax_return->dependents[i]->eic_qualify)
+			{
+				col++;
+			}
 		}
 	}
 
 	return col;
 }	
 
-void get_eic(struct f1040 *tax_return)
+void calculate_eic(struct f1040 *tax_return)
 {
 	int eic_return = 0;
 	
 	FILE *f = fopen(EITC_TABLE, "r");
 
-	printf("Opened file.\n");
 
 	int col1, col2, col3, col4, col5, col6, col7, col8, col9, col10;
 	int eitc_row[10];
@@ -539,7 +431,6 @@ void get_eic(struct f1040 *tax_return)
 
 		if (tax_return->total_income >= col1 & tax_return->total_income < col2)
 		{
-			printf("Found row.\n");
 			eitc_row[0] = col1;
 			eitc_row[1] = col2;
 			eitc_row[2] = col3;
@@ -550,18 +441,12 @@ void get_eic(struct f1040 *tax_return)
 			eitc_row[7] = col8;
 			eitc_row[8] = col9;
 			eitc_row[9] = col10;
-			tax_return->eic_credit = eitc_row[find_eitc_column(&tax_return) - 1];
+			tax_return->eic_credit = eitc_row[find_eitc_column(tax_return) - 1];
 			printf("EIC calculated: %d\n", tax_return->eic_credit);
 		}	
 	}
 
 	fclose(f);
-	printf("get_eic: reached end of function\n");
-}
-
-void calculate_eic(struct f1040 *tax_return)
-{
-
 }
 
 int main()
@@ -573,6 +458,9 @@ int main()
 	
 	struct Schedule1 sch1;
 	initialize_schedule1(&sch1);
+
+	struct Schedule2 sch2;
+	initialize_schedule2(&sch2);
 
 	struct TaxPayer primary;
 	initialize_taxpayer(&primary);
@@ -590,8 +478,9 @@ int main()
 	add_address(&tax_return, address);
 
 	add_wage_income(&primary, 40000);
-	calculate_additional_income(&sch1);
+	add_se_income(&primary, 25000);
 	commit_taxpayer(&tax_return, &sch1, primary);
+	calculate_additional_income(&sch1);
 	calculate_total_income(&tax_return, sch1);
 	calculate_agi(&tax_return, sch1);
 	
@@ -601,9 +490,11 @@ int main()
 
 	calculate_tax(&tax_return);
 
+	calculate_se_tax(&primary, &sch1, &sch2);
+
 	calculate_ctc(&tax_return);
 
-	get_eic(&tax_return);
+	calculate_eic(&tax_return);
 
 	printf("compiled!\n");
 }
