@@ -7,124 +7,11 @@
 #include "Address.h"
 #include "Brackets.h"
 #include "Dependent.h"
+#include "Schedule8812.h"
 #include "Schedule1.h"
 #include "Schedule2.h"
 #include "Schedule3.h"
-
-#define EITC_TABLE "tables/eitc_table.txt"
-
-#define CTC_AMOUNT 2000
-#define ODC_AMOUNT 500
-
-#define MAX_DEP 3
-#define STD_DED_SINGLE 14600
-#define STD_DED_MFJ 29200
-#define STD_DED_HOH 21900
-
-
-struct Brackets brackets;
-
-struct f1040 {
-	int tax_year;
-	struct Date filing_date;
-	//struct TaxPayer *primary_taxpayer;
-	//struct TaxPayer *spouse;
-	int status;
-	struct Address *address;
-	struct Dependent *dependents[MAX_DEP];
-	int w2_wages;
-	int sch1_additional_income;
-	int total_income;
-	int sch1_adjusments_to_income;
-	int agi;
-	int std_deduction;
-	int itemized_deduction;
-	int qbi_deduction;
-	int taxable_income;
-	int tax;
-	int sch2_add_taxes_precredits;
-	int ctc_credit;
-	int odc_credit;
-	int sch3_additional_credits;
-	int sch2_other_taxes;
-	int total_taxes;
-	int w2_payments;
-	int f1099_payments;
-	int estimated_payments;
-	int eic_credit;
-	int actc_credit;
-	int aotc_credit;
-	int total_payments;
-};
-
-
-
-
-//Set int values to zero for easier summation later.
-void initialize_tax_return(struct f1040 *tax_return, int year);
-
-//adds a taxpayer as primary to an empty retrun, a spouse to a tax return
-//that already has a primary_taxpayer, and an error to a tax return that
-//already has two taxpayers. Initialize TaxPayer members with null.
-//void add_taxpayer(struct f1040 *tax_return, struct TaxPayer taxpayer);
-
-//adds a dependent to the tax return up to the MAX_DEP
-void add_dependent(struct f1040 *tax_return, struct Dependent *dependent);
-
-void add_address(struct f1040 *tax_return, struct Address address);
-
-/*******\
-1 = single
-2 = MFJ
-3 = MFS
-4 = HoH
-/*******/
-//void set_status(struct f1040 *tax_return, int status);
-
-//commits taxpayer's income and details to the tax return.
-void commit_taxpayer(struct f1040 *tax_return, struct Schedule1 *schedule, struct TaxPayer taxpayer);
-
-//sums income from Schedule 1 and adds to f1040 struct.
-void calculate_total_income(struct f1040 *tax_return, struct Schedule1 schedule);
-
-void calculate_agi(struct f1040 *tax_return, struct Schedule1 schedule);
-
-void set_std_deduction(struct f1040 *tax_return);
-
-//Form 8995
-void calculate_qbi(struct f1040 *tax_return);
-
-void calculate_taxable_income(struct f1040 *tax_return);
-
-void calculate_tax(struct f1040 *tax_return);
-
-void calculate_additional_precredit_tax(struct f1040 *tax_return, struct Schedule2 schedule);
-
-//Form 8812
-void calculate_ctc(struct f1040 *tax_return);
-
-void calculate_odc(struct f1040 *tax_return);
-
-void calculate_other_credits(struct f1040 *tax_return, struct Schedule3 schedule);
-
-void calculate_other_taxes(struct f1040 *tax_return, struct Schedule2 schedule);
-
-void calculate_total_taxes(struct f1040 *tax_return);
-
-//W-2 and 1099 withholdings, estimated payments
-void calculate_payments(struct f1040 *tax_return);
-
-int find_eitc_comumn(struct f1040 *tax_return);
-
-void calculate_eic(struct f1040 *tax_return);
-
-void calculate_actc(struct f1040 *tax_return);
-
-void calculate_aotc(struct f1040 *tax_return);
-
-void calculate_total_payments(struct f1040 *tax_return, struct Schedule3 schedule);
-
-void calculate_final_result(struct f1040 *tax_return);
+#include "f1040.h"
 
 
 //-----------*-*-*-------------------------*-*-*--------------------\\
@@ -149,8 +36,7 @@ void initialize_tax_return(struct f1040 *tax_return, int tax_year)
 	tax_return->taxable_income = 0;
 	tax_return->tax = 0;
 	tax_return->sch2_add_taxes_precredits = 0;
-	tax_return->ctc_credit = 0;
-	tax_return->odc_credit = 0;
+	tax_return->ctc_odc_credit = 0;
 	tax_return->sch3_additional_credits = 0;
 	tax_return->sch2_other_taxes = 0;
 	tax_return->total_taxes = 0;
@@ -345,47 +231,6 @@ void calculate_tax(struct f1040 *tax_return)
 	printf("Taxes calculated: %d\n", tax_return->tax);
 }
 
-void calculate_ctc(struct f1040 *tax_return)
-{
-	if (tax_return->status == 2 && tax_return->total_income >= 400000)
-	{
-		printf("Does not qualify for CTC.\n");
-		return;
-	}
-	else if (tax_return->total_income >= 200000)
-	{
-		printf("Does not qualify for CTC.\n");
-		return;
-	}
-
-	int num_ctc = 0;
-	for (int i = 0; i < MAX_DEP; i++)
-	{
-		if (tax_return->dependents[i] != NULL)
-		{
-			if (tax_return->dependents[i]->ctc_qualify)
-			{
-				num_ctc++;
-			}
-		}
-	}	
-	printf("Calculating CTC amount: %d\n", num_ctc * CTC_AMOUNT);
-	tax_return->ctc_credit =  num_ctc * CTC_AMOUNT;
-}
-
-void calculate_odc(struct f1040 *tax_return)
-{
-	int num_odc = 0;
-	for (int i = 0; i < MAX_DEP; i++)
-	{
-		if (tax_return->dependents[i]->odc_qualify)
-		{
-			num_odc++;
-		}
-	}	
-	printf("Calculating ODC amount: %d\n", num_odc * ODC_AMOUNT);
-	tax_return->odc_credit = num_odc * ODC_AMOUNT;
-}
 
 int find_eitc_column(const struct f1040 *tax_return) {
 	int col = 3;
@@ -449,52 +294,3 @@ void calculate_eic(struct f1040 *tax_return)
 	fclose(f);
 }
 
-int main()
-{
-	struct f1040 tax_return;
-	initialize_tax_return(&tax_return, 2024);
-
-	read_brackets();
-	
-	struct Schedule1 sch1;
-	initialize_schedule1(&sch1);
-
-	struct Schedule2 sch2;
-	initialize_schedule2(&sch2);
-
-	struct TaxPayer primary;
-	initialize_taxpayer(&primary);
-	//add_taxpayer(&tax_return, primary);
-
-	tax_return.status = 1;
-
-	struct Dependent dependent;
-	initialize_dependent(&dependent);
-	dependent.ctc_qualify = true;
-	dependent.eic_qualify = true;
-	add_dependent(&tax_return, &dependent);
-
-	struct Address address = create_address("831 Elizabeth Ave", "Elizabeth", "NJ", "07201");
-	add_address(&tax_return, address);
-
-	add_wage_income(&primary, 40000);
-	add_se_income(&primary, 25000);
-	commit_taxpayer(&tax_return, &sch1, primary);
-	calculate_additional_income(&sch1);
-	calculate_total_income(&tax_return, sch1);
-	calculate_agi(&tax_return, sch1);
-	
-	set_std_deduction(&tax_return);
-
-	calculate_taxable_income(&tax_return);
-
-	calculate_tax(&tax_return);
-
-	calculate_se_tax(&primary, &sch1, &sch2);
-
-	calculate_ctc(&tax_return);
-
-	calculate_eic(&tax_return);
-
-	printf("compiled!\n");
-}

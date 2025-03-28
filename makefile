@@ -1,7 +1,10 @@
-main: Form1040/f1040.o Form1040/TaxPayer.o Form1040/Address.o Form1040/Brackets.o Form1040/Dependent.o Form1040/Schedule1.o Form1040/Schedule2.o
-	gcc -o main Form1040/f1040.o Form1040/TaxPayer.o Form1040/Address.o Form1040/Brackets.o Form1040/Dependent.o Form1040/Schedule1.o Form1040/Schedule2.o
+main: Form1040/main.o Form1040/f1040.o Form1040/TaxPayer.o Form1040/Address.o Form1040/Brackets.o Form1040/Dependent.o Form1040/Schedule1.o Form1040/Schedule2.o Form1040/Schedule8812.o Form1040/Schedule3.o
+	gcc -o main Form1040/main.o Form1040/f1040.o Form1040/TaxPayer.o Form1040/Address.o Form1040/Brackets.o Form1040/Dependent.o Form1040/Schedule1.o Form1040/Schedule2.o Form1040/Schedule8812.o Form1040/Schedule3.o
 
-f1040.o: Form1040/f1040.c Form1040/TaxPayer.h Form1040/Address.h Form1040/Brackets.h Form1040/Dependent.h Form1040/Schedule1.h Form1040/Schedule2.h Form1040/Schedule3.h
+main.o: Form1040/main.c Form1040/f1040.c Form1040/TaxPayer.h Form1040/Address.h Form1040/Brackets.h Form1040/Dependent.h Form1040/Schedule1.h Form1040/Schedule2.h Form1040/Schedule3.h Form1040/Schedule8812.h
+	gcc -c Form1040/main.c
+
+f1040.o: Form1040/f1040.c Form1040/TaxPayer.h Form1040/Address.h Form1040/Brackets.h Form1040/Dependent.h Form1040/Schedule1.h Form1040/Schedule2.h Form1040/Schedule3.h Form1040/Schedule8812.h
 	gcc -c Form1040/f1040.c
 
 TaxPayer.o: Form1040/TaxPayer.c Form1040/TaxPayer.h Form1040/Date.h
@@ -15,6 +18,12 @@ Brackets.o: Form1040/Brackets.c Form1040/Brackets.h
 
 Dependent.o: Form1040/Dependent.c Form1040/Dependent.h Form1040/Date.h
 	gcc -c Form1040/Dependent.c
+
+Schedule3.o: Form1040/Schedule3.c Form1040/Schedule3.h
+	gcc -c Form1040/Schedule3.c
+
+Schedule8812.o: Form1040/Schedule8812.c  Form1040/Schedule8812.h Form1040/Schedule3.h
+	gcc -c Form1040/Schedule8812.c
 
 Schedule1.o: Form1040/Schedule1.c Form1040/Schedule.h 
 	gcc -c Form1040/Schedule1.c
