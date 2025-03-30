@@ -12,6 +12,7 @@
 #include "Schedule1.h"
 #include "Schedule2.h"
 #include "Schedule3.h"
+#include "Schedule8895.h"
 
 struct Brackets brackets;
 
@@ -37,29 +38,50 @@ int main()
 
 	tax_return.status = 1;
 
-	struct Dependent dependent;
-	initialize_dependent(&dependent);
-	dependent.ctc_qualify = true;
-	dependent.eic_qualify = true;
-	add_dependent(&tax_return, &dependent);
-
 	struct Address address = create_address("831 Elizabeth Ave", "Elizabeth", "NJ", "07201");
 	add_address(&tax_return, address);
 
-	add_wage_income(&primary, 40000);
-	add_se_income(&primary, 25000);
+	struct Dependent dependent1;
+	initialize_dependent(&dependent1);
+	dependent1.odc_qualify = true;
+	dependent1.eic_qualify = true;
+	add_dependent(&tax_return, &dependent1);
+
+	struct Dependent dependent2;
+	initialize_dependent(&dependent2);
+	dependent2.odc_qualify = true;
+	dependent2.eic_qualify = true;
+	add_dependent(&tax_return, &dependent2);
+
+	struct Dependent dependent3;
+	initialize_dependent(&dependent3);
+	dependent3.ctc_qualify = true;
+	dependent3.eic_qualify = true;
+	add_dependent(&tax_return, &dependent3);
+
+	add_wage_income(&primary, 12609);
+	add_se_income(&primary, 10200);
+
+
+	//All income assignments are above commit, all calculations are below commit.
 	commit_taxpayer(&tax_return, &sch1, primary);
+
+
 	calculate_additional_income(&sch1);
+	calculate_earned_income(&tax_return, &sch1);
 	calculate_total_income(&tax_return, sch1);
+
+	calculate_se_tax(&primary, &sch1, &sch2); //must calc before adjustments to income for se_tax_deduction
+	calculate_adjustments_to_income(&sch1); //must calc before agi
 	calculate_agi(&tax_return, sch1);
 	
 	set_std_deduction(&tax_return);
 
+	calculate_qbi_deduction(&tax_return, &sch1);
+
 	calculate_taxable_income(&tax_return);
 
 	calculate_tax(&tax_return);
-
-	calculate_se_tax(&primary, &sch1, &sch2);
 
 	calculate_ctc_odc(&tax_return, &sch3);
 

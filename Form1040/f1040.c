@@ -175,6 +175,7 @@ void calculate_taxable_income(struct f1040 *tax_return)
 	printf("Taxable income calculated: %d\n", tax_return->taxable_income);
 }
 
+
 void calculate_tax(struct f1040 *tax_return)
 {
 	int taxes = 0;
@@ -252,6 +253,12 @@ int find_eitc_column(const struct f1040 *tax_return) {
 	return col;
 }	
 
+void calculate_earned_income(struct f1040 *tax_return, struct Schedule1 *sch1)
+{
+	tax_return->earned_income += tax_return->w2_wages;
+	tax_return->earned_income += sch1->business_income;
+}
+
 void calculate_eic(struct f1040 *tax_return)
 {
 	int eic_return = 0;
@@ -274,7 +281,7 @@ void calculate_eic(struct f1040 *tax_return)
 			&col6, &col7, &col8, &col9, &col10
 		);
 
-		if (tax_return->total_income >= col1 & tax_return->total_income < col2)
+		if (tax_return->earned_income >= col1 & tax_return->earned_income < col2)
 		{
 			eitc_row[0] = col1;
 			eitc_row[1] = col2;

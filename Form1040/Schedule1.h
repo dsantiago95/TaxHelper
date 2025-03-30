@@ -11,7 +11,9 @@ struct Schedule1 {
 	int adjustments_to_income; // 2024TY: line 26
 };
 
-void initialize_schedule1(struct Schedule1 *schedule);
+void initialize_schedule1(struct Schedule1 *);
 
-void calculate_additional_income(struct Schedule1 *schedule);
+void calculate_additional_income(struct Schedule1 *);
+
+void calculate_adjustments_to_income(struct Schedule1 *);
 #endif //SCHEDULE1_H

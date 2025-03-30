@@ -8,6 +8,11 @@
 #include "Schedule3.h"
 #include "Schedule8812.h"
 
+struct Schedule8812 {
+	int num_ctc;
+	int credit_before_limit; //2024TY: line 12
+} schedule;
+
 int ceiling_1000(int x)
 {
 	if (x % 1000 == 0)
@@ -49,8 +54,9 @@ void calculate_ctc_odc(struct f1040 *tax_return, struct Schedule3 *sch3)
 		}
 	}	
 
+	schedule.num_ctc = num_ctc;
 	//2024TY: line 8
-	int total_ctc_odc = (num_ctc * CTC_AMOUNT) + (num_odc * ODC_AMOUNT);
+	double total_ctc_odc = (num_ctc * CTC_AMOUNT) + (num_odc * ODC_AMOUNT);
 
 	int filing_status_limit = 0;
 	if (tax_return->status == 2)
@@ -71,19 +77,21 @@ void calculate_ctc_odc(struct f1040 *tax_return, struct Schedule3 *sch3)
 	}
 
 	//2024TY: line 11
-	int phase_out = agi_limit_diff * 0.05;
+	double phase_out = agi_limit_diff * 0.05;
 	
 	if (total_ctc_odc > phase_out)
 	{
 		total_ctc_odc = total_ctc_odc - phase_out;
+		schedule.credit_before_limit = total_ctc_odc;
 		if (total_ctc_odc > credit_limit_wk_a(tax_return, sch3))
 		{
 			tax_return->ctc_odc_credit = credit_limit_wk_a(tax_return, sch3);
-			printf("Calculating CTC and ODC amount: %d\n", tax_return->ctc_odc_credit);
+			printf("Calculating CTC and ODC amount: %.2f\n", tax_return->ctc_odc_credit);
+			calculate_actc(tax_return);
 			return;
 		} else {
 			tax_return->ctc_odc_credit = total_ctc_odc;
-			printf("Calculating CTC and ODC amount: %d\n", tax_return->ctc_odc_credit);
+			printf("Calculating CTC and ODC amount: %.2f\n", tax_return->ctc_odc_credit);
 			return;
 		}
 	} else {
@@ -95,5 +103,34 @@ void calculate_ctc_odc(struct f1040 *tax_return, struct Schedule3 *sch3)
 
 void calculate_actc(struct f1040 *tax_return)
 {
+	int diff;
 
+	if (schedule.credit_before_limit - tax_return->ctc_odc_credit  <= 0)
+	{
+		printf("Do not qualify for ACTC.\n");
+		return;
+	} else {
+		diff = schedule.credit_before_limit - tax_return->ctc_odc_credit;
+	}
+
+	int max_credit = schedule.num_ctc * ACTC_AMOUNT;
+
+	double tentative_credit;
+	if (tax_return->earned_income < 2500)
+	{
+		tentative_credit = 0;
+	} else {
+		tentative_credit = (tax_return->earned_income - 2500) * 0.15;
+	}
+	if (tentative_credit > max_credit)
+	{
+		tax_return->actc_credit = max_credit;
+		printf("Calculated ACTC: %d\n", tax_return->actc_credit);
+		return;
+	} else {
+		tax_return->actc_credit = tentative_credit;
+		printf("Calculated ACTC: %d\n", tax_return->actc_credit);
+		return;
+	}
+	
 }

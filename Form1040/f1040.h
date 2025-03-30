@@ -8,8 +8,6 @@
 
 #define EITC_TABLE "tables/eitc_table.txt"
 
-#define CTC_AMOUNT 2000
-#define ODC_AMOUNT 500
 
 #define MAX_DEP 3
 #define STD_DED_SINGLE 14600
@@ -29,11 +27,12 @@ struct f1040 {
 	int w2_wages;
 	int sch1_additional_income;
 	int total_income;
+	int earned_income;
 	int sch1_adjusments_to_income;
 	int agi;
 	int std_deduction;
 	int itemized_deduction;
-	int qbi_deduction;
+	double qbi_deduction;
 	int taxable_income;
 	int tax;
 	int sch2_add_taxes_precredits;
@@ -84,10 +83,10 @@ void calculate_agi(struct f1040 *, struct Schedule1);
 
 void set_std_deduction(struct f1040 *);
 
-//Form 8995
-void calculate_qbi(struct f1040 *);
 
 void calculate_taxable_income(struct f1040 *);
+
+void calculate_earned_income(struct f1040 *, struct Schedule1 *);
 
 void calculate_tax(struct f1040 *);
 
@@ -107,7 +106,6 @@ int find_eitc_comumn(struct f1040 *);
 
 void calculate_eic(struct f1040 *);
 
-void calculate_actc(struct f1040 *);
 
 void calculate_aotc(struct f1040 *);
 

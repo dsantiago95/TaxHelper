@@ -20,3 +20,8 @@ void calculate_additional_income(struct Schedule1 *schedule)
 	schedule->additional_income += schedule->rental_income;
 	schedule->additional_income += schedule->business_income;
 }
+
+void calculate_adjustments_to_income(struct Schedule1 *schedule)
+{
+	schedule->adjustments_to_income += schedule->se_tax_deduction;
+}
