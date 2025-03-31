@@ -19,8 +19,8 @@
 struct f1040 {
 	int tax_year;
 	struct Date filing_date;
-	//struct TaxPayer *primary_taxpayer;
-	//struct TaxPayer *spouse;
+	struct TaxPayer *primary_taxpayer;
+	struct TaxPayer *spouse;
 	int status;
 	struct Address *address;
 	struct Dependent *dependents[MAX_DEP];
@@ -58,7 +58,9 @@ void initialize_tax_return(struct f1040 *, int);
 //adds a taxpayer as primary to an empty retrun, a spouse to a tax return
 //that already has a primary_taxpayer, and an error to a tax return that
 //already has two taxpayers. Initialize TaxPayer members with null.
-//void add_taxpayer(struct f1040 *tax_return, struct TaxPayer taxpayer);
+void add_taxpayer(struct f1040 *, struct TaxPayer *);
+
+void add_souse(struct f1040 *, struct TaxPayer *);
 
 //adds a dependent to the tax return up to the MAX_DEP
 void add_dependent(struct f1040 *, struct Dependent *);
@@ -74,7 +76,7 @@ void add_address(struct f1040 *, struct Address);
 //void set_status(struct f1040 *tax_return, int status);
 
 //commits taxpayer's income and details to the tax return.
-void commit_taxpayer(struct f1040 *, struct Schedule1 *, struct TaxPayer);
+void commit_taxpayer(struct f1040 *, struct Schedule1 *);
 
 //sums income from Schedule 1 and adds to f1040 struct.
 void calculate_total_income(struct f1040 *, struct Schedule1);
@@ -107,7 +109,6 @@ int find_eitc_comumn(struct f1040 *);
 void calculate_eic(struct f1040 *);
 
 
-void calculate_aotc(struct f1040 *);
 
 void calculate_total_payments(struct f1040 *, struct Schedule3);
 

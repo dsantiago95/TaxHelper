@@ -19,6 +19,8 @@
 void initialize_tax_return(struct f1040 *tax_return, int tax_year)
 {
 	tax_return->tax_year = tax_year;
+	tax_return->primary_taxpayer = NULL;
+	tax_return->spouse = NULL;
 	tax_return->address = NULL;
 	tax_return->status = 0;
 	for (int i = 0; i < MAX_DEP; i++)
@@ -57,24 +59,31 @@ void initialize_tax_return(struct f1040 *tax_return, int tax_year)
 
 
 
-/*
-void add_taxpayer(struct f1040 *tax_return, struct TaxPayer taxpayer)
+
+void add_taxpayer(struct f1040 *tax_return, struct TaxPayer *taxpayer)
 {
 	if (tax_return->primary_taxpayer == NULL)
 	{
-		tax_return->primary_taxpayer = &taxpayer;
+		tax_return->primary_taxpayer = taxpayer;
 		printf("Taxpayer added successfuly.\n");
 		return;
-	} else if (tax_return->primary_taxpayer != NULL & tax_return->spouse == NULL)
+	}
+	printf("Taxpayer already assigned. No changes.\n");
+	return;
+}
+
+void add_spouse(struct f1040 *tax_return, struct TaxPayer *spouse)
+{
+	if (tax_return->spouse == NULL)
 	{
-		tax_return->spouse = &taxpayer;
+		tax_return->spouse = spouse;
 		printf("Spouse added successfuly.\n");
 		return;
 	}
-	printf("Already 2 taxpayers on the return.\n");
+	printf("Spouse already assigned. No changes.\n");
 	return;
 }
-*/
+
 
 /* // For now, just let the programmer write to tax_return.status freely.
 void set_status(struct f1040 *tax_return, int status)
@@ -146,11 +155,11 @@ void add_dependent(struct f1040 *tax_return, struct Dependent *dependent)
 	return;
 }
 
-void commit_taxpayer(struct f1040 *tax_return, struct Schedule1 *schedule, struct TaxPayer taxpayer)
+void commit_taxpayer(struct f1040 *tax_return, struct Schedule1 *schedule)
 {
-	tax_return->w2_wages += taxpayer.w2_wages;
-	schedule->rental_income += taxpayer.rental_income;
-	schedule->business_income += taxpayer.se_income;
+	tax_return->w2_wages += tax_return->primary_taxpayer->w2_wages;
+	schedule->rental_income += tax_return->primary_taxpayer->rental_income;
+	schedule->business_income += tax_return->primary_taxpayer->se_income;
 	printf("Taxpayer income commited to f1040 and Schedule 1.\n");
 }
 

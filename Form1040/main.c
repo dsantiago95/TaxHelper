@@ -2,6 +2,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define SHOW_PRINTS 0
+
 #include "Date.h"
 #include "TaxPayer.h"
 #include "Address.h"
@@ -13,6 +15,7 @@
 #include "Schedule2.h"
 #include "Schedule3.h"
 #include "Schedule8895.h"
+#include "Schedule8863.h"
 
 struct Brackets brackets;
 
@@ -32,9 +35,12 @@ int main()
 	struct Schedule3 sch3;
 	initialize_schedule3(&sch3);
 
+	struct Schedule8863 sch8863;
+	initialize_schedule8863(&sch8863);
+
 	struct TaxPayer primary;
 	initialize_taxpayer(&primary);
-	//add_taxpayer(&tax_return, primary);
+	add_taxpayer(&tax_return, &primary);
 
 	tax_return.status = 1;
 
@@ -64,7 +70,7 @@ int main()
 
 
 	//All income assignments are above commit, all calculations are below commit.
-	commit_taxpayer(&tax_return, &sch1, primary);
+	commit_taxpayer(&tax_return, &sch1);
 
 
 	calculate_additional_income(&sch1);
@@ -84,6 +90,8 @@ int main()
 	calculate_tax(&tax_return);
 
 	calculate_ctc_odc(&tax_return, &sch3);
+
+	calculate_aotc_llc(&tax_return, &sch2, 4000);
 
 	calculate_eic(&tax_return);
 

@@ -11,7 +11,9 @@ void initialize_taxpayer(struct TaxPayer *taxpayer)
 	taxpayer->se_income = 0; //Sch C, Sch E pg2
 	taxpayer->eic_qualify = false;
 
+	
 	printf("Taxpayer initialized successfuly.\n");
+	
 }
 
 void add_wage_income(struct TaxPayer *taxpayer, int wages)
