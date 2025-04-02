@@ -1,6 +1,7 @@
 #ifndef F1040_H
 #define F1040_H
 
+#include "Address.h"
 #include "Schedule1.h"
 #include "Schedule2.h"
 #include "Schedule3.h"
@@ -22,7 +23,7 @@ struct f1040 {
 	struct TaxPayer *primary_taxpayer;
 	struct TaxPayer *spouse;
 	int status;
-	struct Address *address;
+	struct Address address;
 	struct Dependent *dependents[MAX_DEP];
 	int w2_wages;
 	int sch1_additional_income;
@@ -50,7 +51,8 @@ struct f1040 {
 };
 
 
-
+//Checks for equality member by member
+bool returns_are_equal(struct f1040, struct f1040);
 
 //Set int values to zero for easier summation later.
 void initialize_tax_return(struct f1040 *, int);

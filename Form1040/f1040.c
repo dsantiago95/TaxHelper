@@ -2,26 +2,126 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "Date.h"
-#include "TaxPayer.h"
-#include "Address.h"
 #include "Brackets.h"
 #include "Dependent.h"
-#include "Schedule8812.h"
-#include "Schedule1.h"
-#include "Schedule2.h"
-#include "Schedule3.h"
 #include "f1040.h"
 
 
 //-----------*-*-*-------------------------*-*-*--------------------\\
+
+//checks if members representing return line numbers are equal.
+//Taxpayer, address, and dependent info is not checked.
+bool returns_are_equal(struct f1040 tr1, struct f1040 tr2)
+{
+	if (tr1.tax_year != tr2.tax_year)
+	{
+		return false;
+	}
+	if (tr1.status != tr2.status)
+	{
+		return false;
+	}
+	if (tr1.w2_wages != tr2.w2_wages)
+	{
+		return false;
+	}
+	if (tr1.sch1_additional_income != tr2.sch1_additional_income)
+	{
+		return false;
+	}
+	if (tr1.total_income != tr2.total_income)
+	{
+		return false;
+	}
+	if (tr1.earned_income != tr2.earned_income)
+	{
+		return false;
+	}
+	if (tr1.sch1_adjusments_to_income != tr2.sch1_adjusments_to_income)
+	{
+		return false;
+	}
+	if (tr1.agi != tr2.agi)
+	{
+		return false;
+	}
+	if (tr1.std_deduction != tr2.std_deduction)
+	{
+		return false;
+	}
+	if (tr1.itemized_deduction != tr2.itemized_deduction)
+	{
+		return false;
+	}
+	if (tr1.qbi_deduction != tr2.qbi_deduction)
+	{
+		return false;
+	}
+	if (tr1.taxable_income != tr2.taxable_income)
+	{
+		return false;
+	}
+	if (tr1.tax != tr2.tax)
+	{
+		return false;
+	}
+	if (tr1.sch2_add_taxes_precredits != tr2.sch2_add_taxes_precredits)
+	{
+		return false;
+	}
+	if (tr1.ctc_odc_credit != tr2.ctc_odc_credit)
+	{
+		return false;
+	}
+	if (tr1.sch3_additional_credits != tr2.sch3_additional_credits)
+	{
+		return false;
+	}
+	if (tr1.sch2_other_taxes != tr2.sch2_other_taxes)
+	{
+		return false;
+	}
+	if (tr1.total_taxes != tr2.total_taxes)
+	{
+		return false;
+	}
+	if (tr1.w2_payments != tr2.w2_payments)
+	{
+		return false;
+	}
+	if (tr1.f1099_payments != tr2.f1099_payments)
+	{
+		return false;
+	}
+	if (tr1.estimated_payments != tr2.estimated_payments)
+	{
+		return false;
+	}
+	if (tr1.eic_credit != tr2.eic_credit)
+	{
+		return false;
+	}
+	if (tr1.actc_credit != tr2.actc_credit)
+	{
+		return false;
+	}
+	if (tr1.aotc_credit != tr2.aotc_credit)
+	{
+		return false;
+	}
+	if (tr1.total_payments != tr2.total_payments)
+	{
+		return false;
+	}
+
+	return true;
+}
 
 void initialize_tax_return(struct f1040 *tax_return, int tax_year)
 {
 	tax_return->tax_year = tax_year;
 	tax_return->primary_taxpayer = NULL;
 	tax_return->spouse = NULL;
-	tax_return->address = NULL;
 	tax_return->status = 0;
 	for (int i = 0; i < MAX_DEP; i++)
 	{
@@ -31,6 +131,7 @@ void initialize_tax_return(struct f1040 *tax_return, int tax_year)
 	tax_return->sch1_additional_income = 0;
 	tax_return->total_income = 0;
 	tax_return->sch1_adjusments_to_income = 0;
+	tax_return->earned_income = 0;
 	tax_return->agi = 0;
 	tax_return->std_deduction = 0;
 	tax_return->itemized_deduction = 0;
@@ -45,6 +146,7 @@ void initialize_tax_return(struct f1040 *tax_return, int tax_year)
 	tax_return->w2_payments = 0;
 	tax_return->f1099_payments = 0;
 	tax_return->estimated_payments = 0;
+	tax_return->total_payments = 0;
 	tax_return->eic_credit = 0;
 	tax_return->actc_credit = 0;
 	tax_return->aotc_credit = 0;
@@ -108,13 +210,8 @@ void set_status(struct f1040 *tax_return, int status)
 
 void add_address(struct f1040 *tax_return, struct Address address)
 {
-	if (tax_return->address == NULL)
-	{
-		tax_return->address = &address;
-		printf("Address added to return.\n");
-		return;
-	} 
-	printf("Address already assigned. No change.\n");
+	tax_return->address = address;
+	printf("Address added to return.\n");
 	return;
 }
 

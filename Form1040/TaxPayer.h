@@ -13,9 +13,11 @@ struct TaxPayer {
 	bool eic_qualify;
 };
 
-void initialize_taxpayer(struct TaxPayer *taxpayer);
+bool taxpayers_are_equal(struct TaxPayer, struct TaxPayer);
 
-void add_wage_income(struct TaxPayer *taxpayer, int wages);
+void initialize_taxpayer(struct TaxPayer *, char[35+1]);
 
-void add_se_income(struct TaxPayer *taxpayer, int se_income);
+void add_wage_income(struct TaxPayer *, int);
+
+void add_se_income(struct TaxPayer *, int);
 #endif //TAXPAYER_H

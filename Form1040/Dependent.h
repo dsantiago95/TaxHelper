@@ -11,4 +11,6 @@ struct Dependent {
 	bool eic_qualify;
 };
 
+bool dependents_are_equal(struct Dependent, struct Dependent);
+
 void initialize_dependent(struct Dependent *dep);
