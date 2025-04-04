@@ -37,7 +37,7 @@ struct f1040 {
 	int taxable_income;
 	int tax;
 	int sch2_add_taxes_precredits;
-	int ctc_odc_credit;
+	double ctc_odc_credit;
 	int sch3_additional_credits;
 	int sch2_other_taxes;
 	int total_taxes;
@@ -69,12 +69,11 @@ void add_dependent(struct f1040 *, struct Dependent *);
 
 void add_address(struct f1040 *, struct Address);
 
-/*******\
-1 = single
-2 = MFJ
-3 = MFS
-4 = HoH
-/*******/
+//1 = single
+//2 = MFJ
+//3 = MFS
+//4 = HoH
+
 //void set_status(struct f1040 *tax_return, int status);
 
 //commits taxpayer's income and details to the tax return.

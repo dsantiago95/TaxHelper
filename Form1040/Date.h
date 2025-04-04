@@ -1,6 +1,8 @@
 #ifndef DATE_H
 #define DATE_H
 
+#include <stdbool.h>
+
 struct Date {
 	int month;
 	int day;
